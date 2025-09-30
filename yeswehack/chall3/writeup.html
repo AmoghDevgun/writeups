@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenge 3</title>
+    <style>
+        body {
+            background-color: #1a1f2a; /* Deep, dark navy for a gothic vibe */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 50px 0; /* Added margin to top and bottom */
+            font-family: 'Inconsolata', monospace; /* Sleek, modern monospace font */
+            font-size: 14px;
+            line-height: 1.6;
+            background-image: linear-gradient(45deg, rgba(30, 20, 40, 0.7), rgba(50, 30, 60, 0.7)); /* Dark, moody gradient */
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        .container {
+            max-width: 800px;
+            padding: 25px;
+            text-align: center;
+            background-color: #2a2f3d; /* Dark, muted purple container */
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
+            border: 2px solid #8a4f7a; /* Deep berry pink border */
+            color: #d9c0e0; /* Soft lavender text */
+        }
+        h1, h2 {
+            color: #c06c9d; /* Pastel plum for headings */
+            text-align: left;
+            margin-left: 30px;
+            font-family: 'Lora', serif; /* Readable, elegant serif font */
+            font-weight: 700;
+            text-shadow: 1px 1px 4px rgba(138, 79, 122, 0.5);
+        }
+        p, li {
+            text-align: left;
+            margin-left: 30px;
+        }
+        ul, ol {
+            padding-left: 30px;
+            text-align: left;
+        }
+        code {
+            background-color: #1e2333;
+            padding: 2px 5px;
+            border-radius: 5px;
+            color: #ff8c94; /* Soft coral for code */
+            border: 1px solid #8a4f7a;
+        }
+        pre code {
+            display: block;
+            padding: 12px;
+            background-color: #1e2333;
+            border-radius: 8px;
+            color: #ff8c94;
+            border: 1px solid #8a4f7a;
+            text-align: left; /* Left-aligned code */
+        }
+        .writeup-line {
+            text-align: center;
+            color: #c06c9d; /* Pastel plum for writeup line */
+            font-family: 'Lora', serif;
+            font-weight: 400; /* Lighter weight for small line */
+            margin-top: 10px;
+            text-shadow: 1px 1px 4px rgba(138, 79, 122, 0.5);
+            font-size: 12px; /* Smaller font size for a subtle line */
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500&family=Lora:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Challenge 3</h1>
+        
+        <h2>Description</h2>
+        <p>This challenge involves two user-controlled fields injected directly into a <code>&lt;script&gt;</code> tag:</p>
+        <pre><code>&lt;script&gt;
+const age = 
+const name = ""
+if (age > 18 && name.length)
+{
+    document.write(Welcome to my adult website ${name} 8=D) 
+} 
+else 
+{ 
+    document.write(Go away) 
+} 
+&lt;/script&gt;</code></pre>
+        
+        <h2>Constraints</h2>
+        <ul>
+            <li><strong>age</strong>: Maximum 2 characters, no blacklist.</li>
+            <li><strong>name</strong>: Blacklist forbids <code>&lt;</code>, <code>&gt;</code>, <code>|</code>, <code>'</code>, <code>"</code>.</li>
+        </ul>
+        
+        <h2>Goal</h2>
+        <p>Execute a JavaScript popup (e.g., <code>alert(...)</code>) </p>
+        
+        <h2>Exploitation Steps</h2>
+        <ol>
+            <li>Put a single backslash in the <code>age</code> field: <code>\</code></li>
+            <li>This causes the line to be continued into the next line when the server inserts it into the script source.</li>
+            <li>Craft <code>name</code> to start with a semicolon (to end whatever expression is open), add the payload, and finish with <code>//</code> to comment out leftover characters: <code>;alert(window.name)//</code></li>
+            <li>When combined, the injected text becomes a new executable statement, and the alert runs.</li>
+        </ol>
+        
+        <h2>Proof of Concept (PoC)</h2>
+        <p>Submit the following:</p>
+        <ul>
+            <li><strong>age</strong>: <code>\</code></li>
+            <li><strong>name</strong>: <code>;alert(window.name)//</code></li>
+        </ul>
+        <p>Upon submission, you should see the alert popup.</p>
+        
+        <h2>Why It Works</h2>
+        <p>The backslash at the end of the <code>age</code> line escapes the newline in the generated script, so the <code>name</code> line no longer behaves as a simple assignment. Starting <code>name</code> with <code>;</code> creates a fresh statement, and <code>//</code> comments out the rest, keeping the script syntactically valid. No <code>&lt;</code>, <code>&gt;</code>, or quotes are needed, bypassing the blacklist.</p>
+        
+        <div class="writeup-line">
+            Writeup by ZeroCat
+        </div>
+    </div>
+</body>
+</html>
