@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Challenge 6 — Prototype Pollution</title>
+    <style>
+        body {
+            background-color: #1a1f2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 50px 0;
+            font-family: 'Inconsolata', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background-image: linear-gradient(45deg, rgba(30, 20, 40, 0.7), rgba(50, 30, 60, 0.7));
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        .container {
+            max-width: 800px;
+            padding: 25px;
+            text-align: center;
+            background-color: #2a2f3d;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
+            border: 2px solid #8a4f7a;
+            color: #d9c0e0;
+        }
+        h1, h2 {
+            color: #c06c9d;
+            text-align: left;
+            margin-left: 30px;
+            font-family: 'Lora', serif;
+            font-weight: 700;
+            text-shadow: 1px 1px 4px rgba(138, 79, 122, 0.5);
+        }
+        p, li {
+            text-align: left;
+            margin-left: 30px;
+        }
+        ul, ol {
+            padding-left: 30px;
+            text-align: left;
+        }
+        code {
+            background-color: #1e2333;
+            padding: 2px 5px;
+            border-radius: 5px;
+            color: #ff8c94;
+            border: 1px solid #8a4f7a;
+        }
+        pre code {
+            display: block;
+            padding: 12px;
+            background-color: #1e2333;
+            border-radius: 8px;
+            color: #ff8c94;
+            border: 1px solid #8a4f7a;
+            text-align: left;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .writeup-line {
+            text-align: center;
+            color: #c06c9d;
+            font-family: 'Lora', serif;
+            font-weight: 400;
+            margin-top: 10px;
+            text-shadow: 1px 1px 4px rgba(138, 79, 122, 0.5);
+            font-size: 12px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500&family=Lora:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Challenge 6 — Prototype / WAF Bypass</h1>
+
+        <h2>Description</h2>
+        <p>
+            The application accepts a <code>config</code> object and runs a homebrew WAF over it before printing a greeting.
+            The WAF attempts to recursively sanitize keys and values, but its object/type checks are flawed — allowing a crafted payload
+            to slip through and reach <code>document.write</code>.
+        </p>
+
+        <pre><code>&lt;script&gt;
+const config = ""
+
+function isObject(o) {
+    const proto = Object.getPrototypeOf(o)
+    console.log(typeof o === "object")
+    return typeof o === "object" && proto !== null && proto.constructor.name === "Object"
+}
+
+function WAF(x) {
+    const forbiden = ["&lt;", "&gt;", "'", '"', "?"]
+    //  NULL / Number / Boolean
+    if (x === null || typeof x === "number" || typeof x === "boolean") {
+        return x
+    }
+    // Object
+    if (isObject(x)) {
+        return Object.fromEntries(Object.entries(x).map(([key, value]) =&gt; [WAF(key), WAF(value)]))
+    }
+    // Array
+    if (Array.isArray(x)) {
+        return x.map(x =&gt; WAF(x))
+    }
+    // String
+    for (const needle of forbiden) {
+        if (x.includes(needle)) {
+            throw new Error("Haking attempt detected.")
+        }
+    }
+    return x
+}
+function getMessage(config) {
+    try {
+        WAF(config)
+        Object.setPrototypeOf(config, null)
+        const name = config.name || "Guest"
+        return `Hello ${name}`
+    } catch (e) {
+        return e.message
+    }
+}
+document.write(getMessage(config))
+&lt;/script&gt;</code></pre>
+
+        <h2>Constraints</h2>
+        <ul>
+            <li>The WAF inspects values by type and uses different handling for objects, arrays and strings.</li>
+            <li>String scanning blocks characters: <code>&lt; &gt; ' " ?</code>.</li>
+        </ul>
+
+        <h2>Goal</h2>
+        <p>Execute XSS</p>
+
+        <h2>Exploitation Steps</h2>
+        <ol>
+            <li>Submit a JSON object, setting <code>"__proto__"</code> to an array and putting the payload in <code>name</code>:</li>
+            <pre><code>{"__proto__": [], "name": "&lt;img src=x onerror=alert(1)&gt;"}</code></pre>
+            <li>When the server runs <code>WAF(config)</code>, the flawed type checks cause the payload to be treated in a way that bypasses the string blacklist check.</li>
+            <li>After WAF completes, the code calls <code>Object.setPrototypeOf(config, null)</code> then reads <code>config.name</code> and writes it using <code>document.write</code>.</li>
+            <li>Since <code>config.name</code> contains unsanitized HTML, the browser parses it — the injected <code>&lt;img&gt;</code> fires its <code>onerror</code>, executing <code>alert(1)</code>.</li>
+        </ol>
+
+        <h2>Proof of Concept (PoC)</h2>
+        <p>Use this JSON as <code>config</code>:</p>
+        <pre><code>{"__proto__": [], "name": "&lt;img src=x onerror=alert(1)&gt;"}</code></pre>
+        <p>Expected result: the page renders the image tag and the <code>onerror</code> triggers an alert.</p>
+
+        <h2>Why It Works</h2>
+        <p>The bypass is possible because multiple implementation mistakes line up:</p>
+        <ul>
+            <li><strong>Weak object detection:</strong> <code>isObject</code> tests <code>constructor.name === "Object"</code>. That check fails for arrays, objects with altered prototypes or other non-plain objects. An attacker can manipulate prototype-related properties so the WAF mis-classifies values.</li>
+            <li><strong>Order of handling:</strong> The WAF attempts object recursion first, then array handling, then string checks. If a value is treated as non-string (or hidden via prototype tricks) the forbidden-character string-scan (<code>includes()</code>) never runs on it.</li>
+            <li><strong>Prototype pollution / own-property confusion:</strong> Supplying <code>"__proto__"</code> in JSON can alter the object's prototype chain or mask properties from naive inspection. The WAF only inspects certain entries; values placed in prototype slots, or that change iteration behavior, can escape inspection.</li>
+            <li><strong>Unsafe output sink:</strong> After WAF returns the code uses <code>document.write</code> with content from <code>config.name</code>. If that content contains HTML with event handlers (like <code>onerror</code>), the browser will execute them — classic XSS.</li>
+        </ul>
+
+        <div class="writeup-line">
+            Writeup by ZeroCat
+        </div>
+    </div>
+</body>
+</html>
