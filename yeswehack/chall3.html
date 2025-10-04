@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css">
+    <title>Your Page Title</title>
+    </head>
+<body>
+
+    <main class="page-content">
+        <div class="w">
+
+            <h1> CTF Challenge Writeups </h1>
+            <h2> Description </h2>
+            <p text-indent: 30px;>
+                This challenge involves two user-controlled fields injected directly into a <code class="code">&lt;script&gt;</code> tag:
+                <pre class="code-block">
+                    <code>
+&lt;script&gt;
+const age = 
+const name = ""
+if (age > 18 && name.length)
+{
+    document.write(Welcome to my adult website ${name} 8=D) 
+} 
+else 
+{ 
+    document.write(Go away) 
+} 
+&lt;/script&gt;
+                    </code>
+                </pre>
+
+            </p>
+
+            <h2> Constraints </h2>
+
+            <p>
+                <ul class="custom-bullets">
+                    <li> <span class="glow-strong"> age: </span> Maximum 2 characters, no blacklist. </li>
+                    <li> <span class="glow-strong"> name: </span> Blacklist forbids <code class="code"><</code>, <code class="code">></code>, <code class="code">|</code>, <code class="code">'</code>, <code class="code">"</code>.</li>
+                </ul>
+            </p>
+
+            <h2> Goal </h2>
+
+            <p>
+                Execute a XSS <code class="code">alert(window.name)</code>
+            </p>
+
+            <h2> Exploitation Steps </h2>
+            <p>
+                <ul class="custom-bullets">
+                    <li>Put a single backslash in the <code class="code">age</code> field: <code class="code">\</code></li>
+                    <li>This causes the line to be continued into the next line when the server inserts it into the script source.</li>
+                    <li>Craft <code class="code">name</code> to start with a semicolon (to end whatever expression is open), add the payload, and finish with <code class="code">//</code> to comment out leftover characters: <code class="code">;alert(window.name)//</code></li>
+                    <li>When combined, the injected text becomes a new executable statement, and the alert runs.</li>
+                </ul>
+            
+            </p>
+
+            <h2>Proof of Concept (PoC)</h2>
+            <p>Submit the following
+                <ul class="custom-bullets">
+                    <li><span class="custom-bullets">age</span>: <code class="code">\</code></li>
+                    <li><span class="custom-bullets">name</span>: <code class="code">;alert(window.name)//</code></li>
+                </ul>
+                Upon submission, you should see the alert popup.
+            </p>
+
+            <h2>Why It Works</h2>
+            <p>The backslash at the end of the <code class="code">age</code> line escapes the newline in the generated script, so the <code class="code">name</code> line no longer behaves as a simple assignment. Starting <code class="code">name</code> with <code class="code">;</code> creates a fresh statement, and <code class="code">//</code> comments out the rest, keeping the script syntactically valid. No <code class="code">&lt;</code>, <code class="code">&gt;</code>, or quotes are needed, bypassing the blacklist.</p>
+
+            <div class="writeup-line">
+                Writeup by ZeroCat
+            </div>
+
+        </div>
+    </main>
+</body>
+
+</html>
