@@ -1,0 +1,185 @@
+html,body {
+    background: #000
+}
+
+html {
+    height: 100%
+}
+
+body {
+    color: #ff2777;
+    font-family: monospace;
+    font-size: 16px;
+    line-height: 1.4;
+    margin: 0;
+    min-height: 100%;
+    overflow-wrap: break-word
+}
+
+.post-meta {
+    text-align: right
+}
+
+.site-title {
+    font-size: 36pt;
+    letter-spacing: 2pt
+}
+
+.post-content {
+    font-family: sans-serif;
+    font-size: 16px;
+    line-height: 150%
+}
+
+
+.post-content h2,.post-content h3,.post-content h4,.post-content h5,.post-content h6,.post-content a {
+    font-family: monospace
+}
+
+h2,h3,h4,h5,h6 {
+    margin-top: 3rem;
+    color: #E30085; 
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+hr {
+    margin: 2rem 0;
+}
+
+p {
+    margin: 1rem 0;
+    line-height: 1.8;
+}
+
+li {
+    margin: 0.4rem 0
+    line-height: 1.8;
+}
+
+*:target {
+    background: yellow
+}
+
+.w {
+    max-width: 700px;
+    margin: 2em auto;
+    padding: 1em 2rem;
+    background-color: #000;
+    box-shadow: 3pt
+}
+
+hr {
+    text-align: center;
+    border: 0
+}
+
+hr:before {
+    content: "/////"
+}
+
+hr:after {
+    content: attr(data-content) "/////"
+}
+
+table {
+    width: 100%
+}
+
+table,th,td {
+    border: thin solid black;
+    border-collapse: collapse;
+    padding: 0.4rem
+}
+
+code {
+    color: white;
+    background: black;
+}
+
+div.highlighter-rouge code {
+    display: block;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    padding: 1rem
+}
+
+blockquote {
+    font-style: italic;
+    border: thin solid black;
+    padding: 1rem
+}
+
+blockquote p {
+    margin: 0
+}
+
+img {
+    max-width: 100%;
+    display: block;
+    margin: 0 auto
+}
+
+a {
+    color: #fff
+}
+
+
+.code-block {
+  background-color: #1a0815;
+  padding: 1.2em 1.5em;
+  border-radius: 8px;
+  border: 1px solid #7d2a58;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.code-block code {
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  
+  color: #f7b5dd;
+
+  text-shadow: 0 0 5px rgba(247, 181, 221, 0.4);
+}
+
+.code {
+  background-color: #1a0815;
+  padding: 0.3em 0.5em;
+  border-radius: 6px;
+  border: 1px solid #7d2a58;
+
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #f7b5dd;
+  text-shadow: 0 0 5px rgba(247, 181, 221, 0.4);
+
+  white-space: pre;
+}
+
+
+
+.glow-strong {
+  color: #f7b5dd;
+  font-weight: 600;
+  text-shadow: 0 0 5px rgba(247, 181, 221, 0.4);
+}
+
+ul.custom-bullets li::marker {
+  color: #f7b5dd;
+}
+
+ul {
+    line-height: 1.8;
+}
+
+.writeup-line {
+text-align: center;
+color: #c06c9d;
+font-family: 'Fira Code', 'Consolas', monospace;
+font-weight: 400;
+margin-top: 10px;
+text-shadow: 1px 1px 4px rgba(138, 79, 122, 0.5);
+font-size: 15px;
+}
