@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="../style.css" />
+    <title>Challenge 12</title>
+</head>
+<body>
+
+    <main class="page-content">
+        <div class="w">
+
+            <h1>CTF Challenge Writeup</h1>
+
+            <h2>Description</h2>
+            <p>
+                Small client-side challenge: a closure builds a <code class="code">Secret</code> class that stores a flag on <code class="code">this.flag</code><br>It gets validates by dispatching <code class="code">CustomEvent('validate', { detail: text })</code>. <br>The listener compares <code class="code">e.detail === this.flag</code>.
+            </p>
+
+            <h2> Code <h2>
+                <pre class="code-block">
+                    <code>
+&lt;html&gt;
+    &lt;head&gt;&lt;/head&gt;
+    &lt;body&gt;
+        &lt;p id="result"&gt;&lt;/p&gt;
+        &lt;script&gt;
+            const validate = (function(){
+                const SecretEvent = CustomEvent;
+                class Secret extends EventTarget {
+                    constructor() {
+                        super();
+                        this.flag = `FLAG{${parseInt(Math.random() * Number.MAX_SAFE_INTEGER).toString(36)}}`;
+                        this.addEventListener('validate', e => {
+                            if (e.detail === this.flag){
+                                result.innerHTML = 'Good! But can you leak the flag?';
+                            }
+                            else {
+                                result.innerHTML = 'Wrong password!';
+                            }
+                        })
+                    }
+                    validate(text) {
+                        this.dispatchEvent(new SecretEvent('validate', {detail: text}))
+                    }
+                }
+                return text => {new Secret().validate(text)};
+            })();
+        &lt;/script&gt;
+        &lt;script&gt;
+            EventTarget = null;
+            validate("hello");
+        &lt;/script&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+                    </code>
+                </pre>
+
+
+
+            <h2>What’s happening</h2>
+            <p>
+                The page reads <code class="code">e.detail</code> while the secret is on <code class="code">event.target</code>. If we can run code at the moment <code class="code">e.detail</code> is read, we can access <code class="code">this.target.flag</code> and leak the flag.
+            </p>
+
+            <h2>The exploit (concept)</h2>
+            <p>
+                Replace <code class="code">CustomEvent.prototype.detail</code> with a getter. When the page reads <code class="code">e.detail</code>, the getter executes with <code class="code">this</code> bound to the event so <code class="code">this.target</code> is the <code class="code">Secret</code> instance and <code class="code">this.target.flag</code> is the flag.
+            </p>
+
+            <h2>PoC</h2>
+            <pre class="code-block"><code>
+new CustomEvent('')['__proto__'].__defineGetter__('detail', function(){
+  alert(this.target.flag);
+});
+            </code></pre>
+
+
+            <h2>TL;DR</h2>
+            <p>
+                Mutate <code class="code">CustomEvent.prototype.detail</code> → getter runs when <code class="code">e.detail</code> is read → <code class="code">this.target.flag</code> leaks.
+            </p>
+
+            <div class="writeup-line">
+                Writeup by ZeroCat
+            </div>
+
+        </div>
+    </main>
+
+</body>
+</html>
+
