@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../style.css" />
+    <title>Challenge — Prototype via constructor</title>
+</head>
+<body>
+
+    <main class="page-content">
+        <div class="w">
+
+            <h1>CTF Challenge Writeup</h1>
+
+            <h2>Description</h2>
+            <p>
+                A small client-side challenge where a page merges a JSON-config into an
+                <code class="code">options</code> object using a recursive
+                <code class="code">deepCopy</code>. The script later conditionally executes
+                <code class="code">options.code</code> via
+                <code class="code">new Function(options.code)()</code>.
+                Two important defenses are in place:
+            </p>
+            <ul>
+                <li>Keys containing <code class="code">_</code> (underscore) are blacklisted, so you cannot use <code class="code">"__proto__"</code>.</li>
+                <li>The configuration must be valid JSON — you can't break out of the JSON object using JS expressions; payload must be JSON only.</li>
+            </ul>
+
+            <h2>Vulnerable code</h2>
+            <pre class="code-block"><code>
+&lt;script&gt;
+let options = {
+  "_allowExecute": false
+};
+
+const config = "";
+
+function deepCopy(obj1, obj2) {
+  for (let x in obj2) {
+    if (typeof obj2[x] === 'object') {
+      obj1[x] = deepCopy(obj1[x] || {}, obj2[x]);
+    } else {
+      obj1[x] = obj2[x];
+    }
+  }
+  return obj1;
+}
+
+options = deepCopy(options, config);
+
+if (options._allowExecute !== true) {
+  delete options.code;
+}
+
+if (options.code) {
+  (new Function(options.code))()
+}
+&lt;/script&gt;
+            </code></pre>
+
+            <h2>What's being blocked / why common payloads fail</h2>
+            <p>
+                A common prototype-pollution vector is to set the reserved <code class="code">"__proto__"</code> key in JSON to mutate the prototype. Here that is impossible because <code class="code">_</code> is blacklisted — you cannot include keys containing underscores. Also, the attacker-controlled input must be valid JSON, so you can't slip in executable JS or use non-JSON tricks to reach the prototype chain.
+            </p>
+
+            <h2>The trick — use <code class="code">constructor.prototype</code></h2>
+            <p>
+                Even when <code class="code">"__proto__"</code> is unavailable, a subtle path exists: many objects inherit a <code class="code">constructor</code> property whose <code class="code">prototype</code> is the shared prototype object. The vulnerable <code class="code">deepCopy</code> uses <code class="code">obj1[x] || {}</code> when recursing. If <code class="code">obj1[x]</code> is the built-in constructor function (which is truthy), the function object is used as the merge target — and its <code class="code">prototype</code> property is the actual prototype object that user objects inherit from.
+            </p>
+            <p>
+                By providing JSON that contains <code class="code">"constructor": { "prototype": { ... } }</code>, the merger will end up writing into the real <code class="code">Object.prototype</code> (or whichever constructor prototype it reaches), creating inherited properties that the script subsequently reads.
+            </p>
+
+            <h2>The exploit (payload)</h2>
+            <p>
+                Valid JSON payload that avoids underscores and injects a <code class="code">code</code> property onto the prototype:
+            </p>
+            <pre class="code-block"><code>
+{ "constructor": { "prototype": {"code":"alert(window.name)"} } }
+            </code></pre>
+
+            <h2>TL;DR</h2>
+            <p>
+                When <code class="code">__proto__</code> is blocked (underscore blacklisted) and config must be valid JSON, you can still pollute prototypes by supplying <code class="code">"constructor": {"prototype": ... }</code> in your JSON. The vulnerable merger uses existing constructor function objects as merge targets, so merging into their <code class="code">prototype</code> writes inherited properties (prototype pollution). Deleting an <em>own</em> <code class="code">code</code> property doesn't remove the inherited one, and the page later executes whatever it reads from <code class="code">options.code</code>.
+            </p>
+
+            <div class="writeup-line">
+                Writeup by ZeroCat
+            </div>
+
+        </div>
+    </main>
+
+</body>
+</html>
+
